@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+
+# .NET build files
+bin/
+obj/
+
+# Visual Studio user files
+*.user
+*.suo
+
+# Build output
+Debug/
+Release/
+
+# Logs
+*.log
+
+# NuGet packages
+*.nupkg
+*.snupkg
