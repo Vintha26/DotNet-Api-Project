@@ -48,8 +48,6 @@ namespace DotNetApi.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCustomer(Customer customer)
         {
-            customer.CustomerId = Guid.NewGuid();
-
             _context.Customers.Add(customer);
 
             await _context.SaveChangesAsync();
@@ -63,7 +61,6 @@ namespace DotNetApi.Controllers
 
 
         // PUT: api/Customer/{id}
-        // Update existing customer
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(
             Guid id,
@@ -77,26 +74,42 @@ namespace DotNetApi.Controllers
                 return NotFound("Customer not found.");
             }
 
-            existingCustomer.CustomerName =
-                customer.CustomerName;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerName))
+            {
+                existingCustomer.CustomerName = customer.CustomerName;
+            }
 
-            existingCustomer.CustomerEmail =
-                customer.CustomerEmail;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerEmail))
+            {
+                existingCustomer.CustomerEmail = customer.CustomerEmail;
+            }
 
-            existingCustomer.CustomerPhone =
-                customer.CustomerPhone;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerPhone))
+            {
+                existingCustomer.CustomerPhone = customer.CustomerPhone;
+            }
 
-            existingCustomer.CustomerAddress =
-                customer.CustomerAddress;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerAddress))
+            {
+                existingCustomer.CustomerAddress = customer.CustomerAddress;
+            }
 
-            existingCustomer.CustomerCity =
-                customer.CustomerCity;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerCity))
+            {
+                existingCustomer.CustomerCity = customer.CustomerCity;
+            }
 
-            existingCustomer.CustomerPostalCode =
-                customer.CustomerPostalCode;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerPostalCode))
+            {
+                existingCustomer.CustomerPostalCode =
+                    customer.CustomerPostalCode;
+            }
 
-            existingCustomer.CustomerCountry =
-                customer.CustomerCountry;
+            if (!string.IsNullOrWhiteSpace(customer.CustomerCountry))
+            {
+                existingCustomer.CustomerCountry =
+                    customer.CustomerCountry;
+            }
 
             await _context.SaveChangesAsync();
 
