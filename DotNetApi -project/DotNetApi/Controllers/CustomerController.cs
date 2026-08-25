@@ -63,11 +63,10 @@ namespace DotNetApi.Controllers
 
         // PUT: api/Customer/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCustomer(
-            Guid id,
+        public async Task<IActionResult> UpdateCustomer(Guid id,
             [FromBody] CustomerUpdateDto customerDto)
         {
-            // Implement full replace semantics for PUT: replace stored entity values
+
             var existingCustomer = await _context.Customers.FindAsync(id);
 
             if (existingCustomer == null)

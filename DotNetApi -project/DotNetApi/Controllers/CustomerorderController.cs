@@ -1,5 +1,6 @@
 ﻿using DotNetApi.Data;
 using DotNetApi.Model;
+using DotNetApi.Dto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,48 +20,32 @@ namespace DotNetApi.Controllers
 
         // GET: api/CustomerOrders/{customerId}
         [HttpGet("{customerId}")]
-        public async Task<IActionResult> GetCustomerOrders(
-            Guid customerId)
+        public async Task<IActionResult> GetCustomerOrders(Guid customerId)
         {
             var customer = await _context.Customers
                 .Where(c => c.CustomerId == customerId)
-                .Select(c => new
+                .Select(c => new CustomerOrdersDto
                 {
                     CustomerId = c.CustomerId,
-
                     CustomerName = c.CustomerName,
-
-                    Orders = c.Orders.Select(o => new
+                    Orders = c.Orders.Select(o => new OrderDto
                     {
                         OrderId = o.OrderId,
-
                         OrderDate = o.OrderDate,
-
-                        OrderDetails = o.OrderDetails.Select(od => new
+                        OrderDetails = o.OrderDetails.Select(od => new OrderDetailDto
                         {
                             OrderDetailId = od.OrderDetailsId,
-
                             ProductId = od.ProductId,
-
-                            ProductName =
-                                od.Product.ProductName,
-
+                            ProductName = od.Product.ProductName,
                             Quantity = od.Quantity,
-
                             Price = od.Product.Price
-
                         }).ToList()
-
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
 
-
             if (customer == null)
-            {
                 return NotFound("Customer not found.");
-            }
-
 
             return Ok(customer);
         }
