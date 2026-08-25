@@ -8,11 +8,8 @@ namespace DotNetApi.Data
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-
-            if (await context.Customers.AnyAsync())
-            {
-                return;
-            }
+            // Idempotent seed: add only customers that do not already exist (by CustomerName)
+            // This allows re-running seed without deleting existing data.
 
             var customers = new List<Customer>
 {
@@ -1018,7 +1015,13 @@ namespace DotNetApi.Data
     }
 };
 
-            context.Customers.AddRange(customers);
+            foreach (var seedCustomer in customers)
+            {
+                if (!await context.Customers.AnyAsync(c => c.CustomerName == seedCustomer.CustomerName))
+                {
+                    context.Customers.Add(seedCustomer);
+                }
+            }
             await context.SaveChangesAsync();
 
             // Employee
@@ -1758,14 +1761,69 @@ namespace DotNetApi.Data
 
             var orderMap = new Dictionary<int, Order>();
 
+            // Build persisted id lists aligned with the seed lists. Use tolerant matching
+            // (match on multiple fields) to resolve DB rows that may have different GUIDs.
+            var dbCustomers = await context.Customers.ToListAsync();
+            var persistedCustomerIds = new List<Guid>(customers.Count);
+            foreach (var seedCustomer in customers)
+            {
+                var match = dbCustomers.FirstOrDefault(dc =>
+                    dc.CustomerName == seedCustomer.CustomerName
+                    && (string.IsNullOrEmpty(seedCustomer.CustomerAddress) || dc.CustomerAddress == seedCustomer.CustomerAddress)
+                    && (string.IsNullOrEmpty(seedCustomer.CustomerCity) || dc.CustomerCity == seedCustomer.CustomerCity)
+                );
+
+                persistedCustomerIds.Add(match?.CustomerId ?? seedCustomer.CustomerId);
+            }
+
+            var dbEmployees = await context.Employees.ToListAsync();
+            var persistedEmployeeIds = new List<Guid>(employees.Count);
+            foreach (var seedEmployee in employees)
+            {
+                var match = dbEmployees.FirstOrDefault(de =>
+                    de.EmployeeFirstName == seedEmployee.EmployeeFirstName
+                    && de.EmployeeLastName == seedEmployee.EmployeeLastName
+                    && de.Birthday.HasValue && seedEmployee.Birthday.HasValue
+                    && de.Birthday.Value.Date == seedEmployee.Birthday.Value.Date
+                );
+
+                persistedEmployeeIds.Add(match?.EmployeeId ?? seedEmployee.EmployeeId);
+            }
+
+            var dbShippers = await context.Shippers.ToListAsync();
+            var persistedShipperIds = new List<Guid>(shippers.Count);
+            foreach (var seedShipper in shippers)
+            {
+                var match = dbShippers.FirstOrDefault(ds => ds.ShipperName == seedShipper.ShipperName);
+                persistedShipperIds.Add(match?.ShipperId ?? seedShipper.ShipperId);
+            }
+
             foreach (var data in orderData)
             {
+                // Validate indices to get clearer error messages when seed data references
+                // customers/employees/shippers by 1-based index.
+                if (data.Item2 - 1 < 0 || data.Item2 - 1 >= customers.Count)
+                {
+                    throw new InvalidOperationException($"Order seed references invalid customer index {data.Item2} for original OrderID {data.Item1}.");
+                }
+
+                if (data.Item3 - 1 < 0 || data.Item3 - 1 >= employees.Count)
+                {
+                    throw new InvalidOperationException($"Order seed references invalid employee index {data.Item3} for original OrderID {data.Item1}.");
+                }
+
+                if (data.Item5 - 1 < 0 || data.Item5 - 1 >= shippers.Count)
+                {
+                    throw new InvalidOperationException($"Order seed references invalid shipper index {data.Item5} for original OrderID {data.Item1}.");
+                }
+
+                // Use persisted IDs aligned with the seed lists (1-based indices in the data)
                 var order = new Order
                 {
-                    CustomerId = customers[data.Item2 - 1].CustomerId,
-                    EmployeeId = employees[data.Item3 - 1].EmployeeId,
+                    CustomerId = persistedCustomerIds[data.Item2 - 1],
+                    EmployeeId = persistedEmployeeIds[data.Item3 - 1],
                     OrderDate = data.Item4,
-                    ShipperId = shippers[data.Item5 - 1].ShipperId
+                    ShipperId = persistedShipperIds[data.Item5 - 1]
                 };
 
                 context.Orders.Add(order);

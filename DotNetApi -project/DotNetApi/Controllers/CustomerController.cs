@@ -20,7 +20,7 @@ namespace DotNetApi.Controllers
         // Get all customers
         [HttpGet]
         public async Task<IActionResult> GetCustomers()
-        {
+         {
             var customers = await _context.Customers.ToListAsync();
 
             return Ok(customers);
@@ -64,52 +64,25 @@ namespace DotNetApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(
             Guid id,
-            Customer customer)
+            [FromBody] Model.CustomerUpdateDto customerDto)
         {
-            var existingCustomer =
-                await _context.Customers.FindAsync(id);
+            // Implement full replace semantics for PUT: replace stored entity values
+            var existingCustomer = await _context.Customers.FindAsync(id);
 
             if (existingCustomer == null)
             {
                 return NotFound("Customer not found.");
             }
 
-            if (!string.IsNullOrWhiteSpace(customer.CustomerName))
-            {
-                existingCustomer.CustomerName = customer.CustomerName;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.CustomerEmail))
-            {
-                existingCustomer.CustomerEmail = customer.CustomerEmail;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.CustomerPhone))
-            {
-                existingCustomer.CustomerPhone = customer.CustomerPhone;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.CustomerAddress))
-            {
-                existingCustomer.CustomerAddress = customer.CustomerAddress;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.CustomerCity))
-            {
-                existingCustomer.CustomerCity = customer.CustomerCity;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.CustomerPostalCode))
-            {
-                existingCustomer.CustomerPostalCode =
-                    customer.CustomerPostalCode;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.CustomerCountry))
-            {
-                existingCustomer.CustomerCountry =
-                    customer.CustomerCountry;
-            }
+            // Map allowed scalar fields from DTO to entity. This avoids model-binding
+            // nested navigation properties (orders, etc.) that cause validation errors.
+            existingCustomer.CustomerName = customerDto.CustomerName;
+            existingCustomer.CustomerEmail = customerDto.CustomerEmail;
+            existingCustomer.CustomerPhone = customerDto.CustomerPhone;
+            existingCustomer.CustomerAddress = customerDto.CustomerAddress;
+            existingCustomer.CustomerCity = customerDto.CustomerCity;
+            existingCustomer.CustomerPostalCode = customerDto.CustomerPostalCode;
+            existingCustomer.CustomerCountry = customerDto.CustomerCountry;
 
             await _context.SaveChangesAsync();
 
