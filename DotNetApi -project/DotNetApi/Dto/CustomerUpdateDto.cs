@@ -1,4 +1,4 @@
-namespace DotNetApi.Model
+namespace DotNetApi.Dto
 {
     // DTO used for customer update requests to avoid binding navigation properties
     public class CustomerUpdateDto

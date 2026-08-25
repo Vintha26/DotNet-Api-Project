@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -64,7 +65,7 @@ namespace DotNetApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(
             Guid id,
-            [FromBody] Model.CustomerUpdateDto customerDto)
+            [FromBody] CustomerUpdateDto customerDto)
         {
             // Implement full replace semantics for PUT: replace stored entity values
             var existingCustomer = await _context.Customers.FindAsync(id);
