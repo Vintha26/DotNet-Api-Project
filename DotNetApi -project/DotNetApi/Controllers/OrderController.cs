@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,24 +37,52 @@ namespace DotNetApi.Controllers
         }
 
         [HttpPost]
-
-        public async Task<IActionResult> CreateOrder(Order order)
+        public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var order = new Order
+            {
+                CustomerId = dto.CustomerId,
+                EmployeeId = dto.EmployeeId,
+                OrderDate = dto.OrderDate ?? DateTime.Now,
+                ShipperId = dto.ShipperId
+            };
+
             _context.Orders.Add(order);
+            // If nested details provided, create them explicitly
+            if (dto.OrderDetails != null)
+            {
+                foreach (var od in dto.OrderDetails)
+                {
+                    var orderDetail = new OrderDetail
+                    {
+                        OrderId = order.OrderId,
+                        ProductId = od.ProductId,
+                        Quantity = od.Quantity
+                    };
+                    _context.OrderDetails.Add(orderDetail);
+                }
+            }
+
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetOrderById), new { id = order.OrderId }, order);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateOrder(Guid id, [FromBody] Order order)
+        public async Task<IActionResult> UpdateOrder(Guid id, [FromBody] OrderUpdateDto dto)
         {
-            if (id != order.OrderId)
-            {
-                return BadRequest("Order ID mismatch.");
-            }
+            var existing = await _context.Orders.FindAsync(id);
+            if (existing == null)
+                return NotFound("Order not found.");
 
-            _context.Entry(order).State = EntityState.Modified;
+            existing.CustomerId = dto.CustomerId;
+            existing.EmployeeId = dto.EmployeeId;
+            existing.OrderDate = dto.OrderDate ?? existing.OrderDate;
+            existing.ShipperId = dto.ShipperId;
 
+            // For simplicity, do not modify OrderDetails via this endpoint
             try
             {
                 await _context.SaveChangesAsync();
@@ -61,9 +90,7 @@ namespace DotNetApi.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!await OrderExists(id))
-                {
                     return NotFound("Order not found.");
-                }
                 throw;
             }
 

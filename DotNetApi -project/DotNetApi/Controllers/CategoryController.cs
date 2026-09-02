@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,29 +35,32 @@ namespace DotNetApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCategory([FromBody] Category category)
+        public async Task<IActionResult> CreateCategory([FromBody] CategoryCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var category = new Category
+            {
+                CategoryName = dto.CategoryName,
+                CategoryDescription = dto.CategoryDescription
+            };
+
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCategoryById), new { id = category.CategoryId }, category);
+            return CreatedAtAction(nameof(GetCategoryById), new { id = category.CategoryId }, new { category.CategoryId, category.CategoryName, category.CategoryDescription });
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] Category category)
+        public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] CategoryUpdateDto dto)
         {
-            if (id != category.CategoryId)
-                return BadRequest("Category ID mismatch.");
-
             var existing = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryId == id);
             if (existing == null)
                 return NotFound("Category not found.");
 
-            // Update scalar properties safely to avoid overposting
-            _context.Entry(existing).CurrentValues.SetValues(category);
+            existing.CategoryName = dto.CategoryName;
+            existing.CategoryDescription = dto.CategoryDescription;
 
             try
             {

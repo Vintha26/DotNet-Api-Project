@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,10 +37,18 @@ namespace DotNetApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateEmployee([FromBody] Employee employee)
+        public async Task<IActionResult> CreateEmployee([FromBody] EmployeeCreateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            var employee = new Employee
+            {
+                EmployeeFirstName = dto.EmployeeFirstName,
+                EmployeeLastName = dto.EmployeeLastName,
+                Birthday = dto.Birthday,
+                Notes = dto.Notes
+            };
 
            _context.Employees.Add(employee);
             await _context.SaveChangesAsync();
@@ -48,17 +57,16 @@ namespace DotNetApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEmployee(Guid id, [FromBody] Employee employee)
+        public async Task<IActionResult> UpdateEmployee(Guid id, [FromBody] EmployeeUpdateDto dto)
         {
-            if (id != employee.EmployeeId)
-                return BadRequest("Employee ID mismatch.");
-
             var existing = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == id);
             if (existing == null)
                 return NotFound("Employee not found.");
 
-            // Update scalar properties safely to avoid overposting
-            _context.Entry(existing).CurrentValues.SetValues(employee);
+            existing.EmployeeFirstName = dto.EmployeeFirstName;
+            existing.EmployeeLastName = dto.EmployeeLastName;
+            existing.Birthday = dto.Birthday;
+            existing.Notes = dto.Notes;
 
             try
             {

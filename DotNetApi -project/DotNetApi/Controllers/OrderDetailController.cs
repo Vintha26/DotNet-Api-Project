@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,21 +37,32 @@ namespace DotNetApi.Controllers
             return Ok(orderDetail);
         }
         [HttpPost]
-        public async Task<IActionResult> CreateOrderDetail(OrderDetail orderDetail)
+        public async Task<IActionResult> CreateOrderDetail([FromBody] OrderDetailCreateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var orderDetail = new OrderDetail
+            {
+                OrderId = dto.OrderId,
+                ProductId = dto.ProductId,
+                Quantity = dto.Quantity
+            };
+
             _context.OrderDetails.Add(orderDetail);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetOrderDetailById), new { id = orderDetail.OrderDetailsId }, orderDetail);
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateOrderDetail(Guid id, [FromBody] OrderDetail orderDetail)
+        public async Task<IActionResult> UpdateOrderDetail(Guid id, [FromBody] OrderDetailUpdateDto dto)
         {
-            if (id != orderDetail.OrderDetailsId)
-            {
-                return BadRequest("Order detail ID mismatch.");
-            }
+            var existing = await _context.OrderDetails.FindAsync(id);
+            if (existing == null)
+                return NotFound("Order detail not found.");
 
-            _context.Entry(orderDetail).State = EntityState.Modified;
+            existing.OrderId = dto.OrderId;
+            existing.ProductId = dto.ProductId;
+            existing.Quantity = dto.Quantity;
 
             try
             {
@@ -59,9 +71,7 @@ namespace DotNetApi.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!await OrderDetailExists(id))
-                {
                     return NotFound("Order detail not found.");
-                }
                 throw;
             }
 

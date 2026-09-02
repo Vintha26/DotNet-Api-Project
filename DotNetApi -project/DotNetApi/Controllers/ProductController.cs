@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -34,21 +35,36 @@ namespace DotNetApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateProduct(Product product)
+        public async Task<IActionResult> CreateProduct([FromBody] ProductCreateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var product = new Product
+            {
+                ProductName = dto.ProductName,
+                Unit = dto.Unit,
+                Price = dto.Price,
+                SupplierId = dto.SupplierId,
+                CategoryId = dto.CategoryId
+            };
+
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetProducts), new { id = product.ProductId }, product);
+            return CreatedAtAction(nameof(GetProductById), new { id = product.ProductId }, product);
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] Product product)
+        public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] ProductUpdateDto dto)
         {
-            if (id != product.ProductId)
-            {
-                return BadRequest("Product ID mismatch.");
-            }
+            var existing = await _context.Products.FindAsync(id);
+            if (existing == null)
+                return NotFound("Product not found.");
 
-            _context.Entry(product).State = EntityState.Modified;
+            existing.ProductName = dto.ProductName;
+            existing.Unit = dto.Unit;
+            existing.Price = dto.Price;
+            existing.SupplierId = dto.SupplierId;
+            existing.CategoryId = dto.CategoryId;
 
             try
             {
@@ -57,9 +73,7 @@ namespace DotNetApi.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!await ProductExists(id))
-                {
                     return NotFound("Product not found.");
-                }
                 throw;
             }
 

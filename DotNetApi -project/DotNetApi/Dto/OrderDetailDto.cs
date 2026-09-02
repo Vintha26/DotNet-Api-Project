@@ -1,3 +1,5 @@
+using System;
+
 namespace DotNetApi.Dto
 {
     public class OrderDetailDto

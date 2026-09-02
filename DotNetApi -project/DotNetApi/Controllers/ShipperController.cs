@@ -1,4 +1,5 @@
 ﻿using DotNetApi.Data;
+using DotNetApi.Dto;
 using DotNetApi.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,21 +34,30 @@ namespace DotNetApi.Controllers
             return Ok(shipper);
         }
         [HttpPost]
-        public async Task<IActionResult> CreateShipper(Shipper shipper)
+        public async Task<IActionResult> CreateShipper([FromBody] ShipperCreateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var shipper = new Shipper
+            {
+                ShipperName = dto.ShipperName,
+                phone = dto.Phone
+            };
+
             _context.Shippers.Add(shipper);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetShipperById), new { id = shipper.ShipperId }, shipper);
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateShipper(Guid id, [FromBody] Shipper shipper)
+        public async Task<IActionResult> UpdateShipper(Guid id, [FromBody] ShipperUpdateDto dto)
         {
-            if (id != shipper.ShipperId)
-            {
-                return BadRequest("Shipper ID mismatch.");
-            }
+            var existing = await _context.Shippers.FindAsync(id);
+            if (existing == null)
+                return NotFound("Shipper not found.");
 
-            _context.Entry(shipper).State = EntityState.Modified;
+            existing.ShipperName = dto.ShipperName;
+            existing.phone = dto.Phone;
 
             try
             {
@@ -56,9 +66,7 @@ namespace DotNetApi.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!await ShipperExists(id))
-                {
                     return NotFound("Shipper not found.");
-                }
                 throw;
             }
 

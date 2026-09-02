@@ -47,16 +47,29 @@ namespace DotNetApi.Controllers
         // POST: api/Customer
         // Create a new customer
         [HttpPost]
-        public async Task<IActionResult> CreateCustomer(Customer customer)
+        public async Task<IActionResult> CreateCustomer([FromBody] CustomerCreateDto dto)
         {
-            _context.Customers.Add(customer);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
+            var customer = new Customer
+            {
+                CustomerName = dto.CustomerName,
+                CustomerEmail = dto.CustomerEmail,
+                CustomerPhone = dto.CustomerPhone,
+                CustomerAddress = dto.CustomerAddress,
+                CustomerCity = dto.CustomerCity,
+                CustomerPostalCode = dto.CustomerPostalCode,
+                CustomerCountry = dto.CustomerCountry
+            };
+
+            _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(
                 nameof(GetCustomerById),
                 new { id = customer.CustomerId },
-                customer
+                new { customer.CustomerId, customer.CustomerName, customer.CustomerEmail }
             );
         }
 
